@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gym Workout Tracker</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --surface2: #22222f;
+    --border: #2e2e40;
+    --accent: #6c63ff;
+    --accent2: #ff6b6b;
+    --green: #22c55e;
+    --text: #e8e8f0;
+    --muted: #8888a8;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
+  }
+  .header-logo span { font-size: 26px; }
+  .nav-controls {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 14px; border-radius: 8px;
+    cursor: pointer; font-size: 14px; transition: all 0.15s;
+  }
+  .nav-btn:hover { background: var(--accent); border-color: var(--accent); }
+  .date-display {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 8px 18px; border-radius: 8px; font-size: 15px;
+    font-weight: 600; min-width: 200px; text-align: center;
+  }
+  .today-btn {
+    background: var(--accent); border: none; color: #fff;
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: opacity 0.15s;
+  }
+  .today-btn:hover { opacity: 0.85; }
+
+  /* ── Layout ── */
+  .main { max-width: 900px; margin: 0 auto; padding: 24px 16px 80px; }
+
+  /* ── Day summary bar ── */
+  .day-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .day-bar-left { display: flex; align-items: center; gap: 14px; }
+  .day-label {
+    font-size: 22px; font-weight: 700;
+  }
+  .split-tag {
+    background: var(--accent);
+    color: #fff; font-size: 12px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .progress-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-bar {
+    width: 160px; height: 8px;
+    background: var(--border); border-radius: 4px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--green); border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  .progress-text { font-size: 13px; color: var(--muted); }
+
+  /* ── Day Note ── */
+  .day-note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .day-note label {
+    font-size: 12px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    display: block; margin-bottom: 8px;
+  }
+  .day-note textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px;
+    padding: 10px 14px; resize: vertical; min-height: 60px;
+    font-family: inherit; outline: none; transition: border-color 0.15s;
+  }
+  .day-note textarea:focus { border-color: var(--accent); }
+  .day-note textarea::placeholder { color: var(--muted); }
+
+  /* ── Muscle Group Cards ── */
+  .muscle-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .mg-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .mg-header:hover { background: var(--surface2); }
+  .mg-header-left { display: flex; align-items: center; gap: 12px; }
+  .mg-icon { font-size: 22px; }
+  .mg-name { font-size: 16px; font-weight: 700; }
+  .mg-count { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .mg-right { display: flex; align-items: center; gap: 10px; }
+  .mg-check-all {
+    font-size: 12px; color: var(--accent); cursor: pointer;
+    background: none; border: none; font-family: inherit;
+    padding: 4px 8px; border-radius: 6px; transition: background 0.15s;
+  }
+  .mg-check-all:hover { background: rgba(108,99,255,0.15); }
+  .mg-chevron {
+    color: var(--muted); transition: transform 0.2s;
+    font-size: 18px;
+  }
+  .mg-chevron.open { transform: rotate(180deg); }
+
+  .mg-body { padding: 0 20px 14px; display: none; }
+  .mg-body.open { display: block; }
+
+  /* ── Exercise Row ── */
+  .exercise-row {
+    border-top: 1px solid var(--border);
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ex-top { display: flex; align-items: center; gap: 12px; }
+  .ex-checkbox {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid var(--border); background: transparent;
+    cursor: pointer; appearance: none; flex-shrink: 0;
+    position: relative; transition: all 0.15s;
+  }
+  .ex-checkbox:checked {
+    background: var(--green); border-color: var(--green);
+  }
+  .ex-checkbox:checked::after {
+    content: '✓';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff; font-size: 13px; font-weight: 700;
+  }
+  .ex-name {
+    flex: 1; font-size: 15px;
+    transition: color 0.15s, text-decoration 0.15s;
+  }
+  .ex-name.done {
+    text-decoration: line-through; color: var(--muted);
+  }
+  .ex-remove {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 16px; padding: 0 4px;
+    opacity: 0.5; transition: opacity 0.15s;
+  }
+  .ex-remove:hover { opacity: 1; color: var(--accent2); }
+
+  .ex-notes {
+    display: flex; gap: 8px; padding-left: 34px;
+  }
+  .ex-notes input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    font-size: 13px; padding: 5px 10px; outline: none;
+    transition: border-color 0.15s; flex: 1;
+    font-family: inherit;
+  }
+  .ex-notes input:focus { border-color: var(--accent); }
+  .ex-notes input::placeholder { color: var(--muted); }
+
+  /* ── Add Exercise ── */
+  .add-ex-row {
+    display: flex; gap: 8px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .add-ex-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 14px;
+    padding: 8px 12px; outline: none; font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .add-ex-input:focus { border-color: var(--accent); }
+  .add-ex-input::placeholder { color: var(--muted); }
+  .add-ex-btn {
+    background: var(--accent); border: none; color: #fff;
+    border-radius: 8px; padding: 8px 16px; cursor: pointer;
+    font-size: 14px; font-weight: 600; transition: opacity 0.15s;
+  }
+  .add-ex-btn:hover { opacity: 0.85; }
+
+  /* ── Day selector / jump ── */
+  .date-input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 8px 12px;
+    font-size: 14px; outline: none; cursor: pointer;
+  }
+
+  /* ── Completed banner ── */
+  .completed-banner {
+    background: rgba(34,197,94,0.12);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--green);
+    display: none;
+  }
+  .completed-banner.show { display: block; }
+
+  /* ── Streak bar ── */
+  .streak-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .streak-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px;
+  }
+  .streak-num { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .streak-label { color: var(--muted); font-size: 12px; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <span>🏋️</span> GYM TRACKER
+  </div>
+  <div class="nav-controls">
+    <button class="nav-btn" onclick="changeDay(-1)">◀ Prev</button>
+    <div class="date-display" id="dateDisplay">—</div>
+    <button class="nav-btn" onclick="changeDay(1)">Next ▶</button>
+    <button class="today-btn" onclick="goToday()">Today</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="streak-bar" id="streakBar">
+    <div class="streak-item">
+      <div>
+        <div class="streak-num" id="streakCount">0</div>
+        <div class="streak-label">Day Streak 🔥</div>
+      </div>
+    </div>
+    <div class="streak-item">
+      <div>
+        <div class="streak-num" id="totalDays">0</div>
+        <div class="streak-label">Total Workouts</div>
+      </div>
+    </div>
+    <div class="streak-item">
+      <div>
+        <div class="streak-num" id="totalExercises">0</div>
+        <div class="streak-label">Exercises Done</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="day-bar">
+    <div class="day-bar-left">
+      <div class="day-label" id="dayLabel">Monday</div>
+      <div class="split-tag" id="splitTag">Push Day</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progressText">0 / 0 done</div>
+    </div>
+  </div>
+
+  <div class="completed-banner" id="completedBanner">
+    🎉 Workout complete! Great job today!
+  </div>
+
+  <div class="day-note">
+    <label>Day Notes</label>
+    <textarea id="dayNoteArea" placeholder="How did the workout feel? Energy level, weight used, PRs, injuries..." rows="2"></textarea>
+  </div>
+
+  <div id="muscleGroups"></div>
+
+</div>
+
+<script>
+// ──────────────────────────────────────────
+// DATA
+// ──────────────────────────────────────────
+const MUSCLE_GROUPS = [
+  {
+    id: 'chest', name: 'Chest', icon: '💪',
+    exercises: ['Bench Press', 'Incline Dumbbell Press', 'Cable Flyes', 'Push-ups', 'Chest Dips', 'Decline Bench Press']
+  },
+  {
+    id: 'back', name: 'Back', icon: '🦾',
+    exercises: ['Deadlift', 'Pull-ups', 'Lat Pulldown', 'Seated Cable Row', 'Bent-Over Barbell Row', 'Face Pull', 'Single-Arm Dumbbell Row']
+  },
+  {
+    id: 'shoulders', name: 'Shoulders', icon: '🏔️',
+    exercises: ['Overhead Press', 'Lateral Raises', 'Front Raises', 'Reverse Pec Deck', 'Arnold Press', 'Upright Row', 'Shrugs']
+  },
+  {
+    id: 'legs', name: 'Legs', icon: '🦵',
+    exercises: ['Barbell Squat', 'Leg Press', 'Romanian Deadlift', 'Leg Curl', 'Leg Extension', 'Calf Raises', 'Walking Lunges', 'Bulgarian Split Squat']
+  },
+  {
+    id: 'biceps', name: 'Biceps', icon: '💪',
+    exercises: ['Barbell Curl', 'Hammer Curl', 'Incline Dumbbell Curl', 'Preacher Curl', 'Cable Curl', 'Concentration Curl']
+  },
+  {
+    id: 'triceps', name: 'Triceps', icon: '🔱',
+    exercises: ['Skull Crushers', 'Tricep Pushdown', 'Overhead Tricep Extension', 'Tricep Dips', 'Close-Grip Bench Press', 'Kickbacks']
+  },
+  {
+    id: 'abs', name: 'Abs', icon: '⚡',
+    exercises: ['Crunches', 'Plank', 'Russian Twists', 'Hanging Leg Raises', 'Cable Crunch', 'Bicycle Crunches', 'Ab Wheel Rollout']
+  },
+  {
+    id: 'cardio', name: 'Cardio', icon: '🏃',
+    exercises: ['Treadmill Run', 'Cycling', 'Jump Rope', 'Rowing Machine', 'Stair Climber', 'HIIT Sprints', 'Elliptical']
+  }
+];
+
+// Default 6-day split
+const SPLITS = [
+  { name: 'Push Day',    groups: ['chest', 'shoulders', 'triceps'] },
+  { name: 'Pull Day',    groups: ['back', 'biceps'] },
+  { name: 'Leg Day',     groups: ['legs', 'abs'] },
+  { name: 'Push Day',    groups: ['chest', 'shoulders', 'triceps'] },
+  { name: 'Pull Day',    groups: ['back', 'biceps'] },
+  { name: 'Full Body',   groups: ['chest', 'back', 'legs', 'abs', 'cardio'] },
+  { name: 'Rest Day 😴', groups: [] }
+];
+
+// ──────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────
+let currentDate = todayKey();
+let data = loadData();
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem('gymTracker') || '{}'); } catch { return {}; }
+}
+
+function saveData() {
+  localStorage.setItem('gymTracker', JSON.stringify(data));
+  updateStats();
+}
+
+function getDayData(dateKey) {
+  if (!data[dateKey]) {
+    data[dateKey] = { note: '', groups: {}, expanded: {} };
+    // Seed default exercises for each group
+    MUSCLE_GROUPS.forEach(mg => {
+      data[dateKey].groups[mg.id] = mg.exercises.map(name => ({
+        name, checked: false, sets: '', reps: '', weight: ''
+      }));
+      data[dateKey].expanded[mg.id] = false;
+    });
+    // Auto-expand today's split groups
+    const split = getSplit(dateKey);
+    split.groups.forEach(gid => { data[dateKey].expanded[gid] = true; });
+  }
+  return data[dateKey];
+}
+
+function getSplit(dateKey) {
+  const d = new Date(dateKey + 'T00:00:00');
+  const dow = d.getDay(); // 0=Sun
+  const idx = dow === 0 ? 6 : dow - 1;
+  return SPLITS[idx];
+}
+
+// ──────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────
+function render() {
+  const dayData = getDayData(currentDate);
+  const split = getSplit(currentDate);
+  const d = new Date(currentDate + 'T00:00:00');
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  document.getElementById('dateDisplay').textContent =
+    `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  document.getElementById('dayLabel').textContent = days[d.getDay()];
+  document.getElementById('splitTag').textContent = split.name;
+
+  // Day note
+  const noteArea = document.getElementById('dayNoteArea');
+  noteArea.value = dayData.note || '';
+  noteArea.oninput = () => { dayData.note = noteArea.value; saveData(); };
+
+  // Progress
+  let total = 0, done = 0;
+  MUSCLE_GROUPS.forEach(mg => {
+    (dayData.groups[mg.id] || []).forEach(ex => { total++; if (ex.checked) done++; });
+  });
+  document.getElementById('progressFill').style.width = total ? `${Math.round(done/total*100)}%` : '0%';
+  document.getElementById('progressText').textContent = `${done} / ${total} done`;
+  const banner = document.getElementById('completedBanner');
+  banner.classList.toggle('show', done > 0 && done === total);
+
+  // Muscle groups
+  const container = document.getElementById('muscleGroups');
+  container.innerHTML = '';
+
+  MUSCLE_GROUPS.forEach(mg => {
+    const exList = dayData.groups[mg.id] || [];
+    const isOpen = dayData.expanded[mg.id];
+    const mgDone = exList.filter(e => e.checked).length;
+    const isActive = split.groups.includes(mg.id);
+
+    const card = document.createElement('div');
+    card.className = 'muscle-group';
+    if (isActive) card.style.borderColor = 'rgba(108,99,255,0.4)';
+
+    card.innerHTML = `
+      <div class="mg-header" onclick="toggleMG('${mg.id}')">
+        <div class="mg-header-left">
+          <div class="mg-icon">${mg.icon}</div>
+          <div>
+            <div class="mg-name">${mg.name} ${isActive ? '⭐' : ''}</div>
+            <div class="mg-count">${mgDone}/${exList.length} exercises done</div>
+          </div>
+        </div>
+        <div class="mg-right">
+          <button class="mg-check-all" onclick="event.stopPropagation(); checkAll('${mg.id}')">
+            ${mgDone === exList.length && exList.length > 0 ? 'Uncheck All' : 'Check All'}
+          </button>
+          <div class="mg-chevron ${isOpen ? 'open' : ''}">▼</div>
+        </div>
+      </div>
+      <div class="mg-body ${isOpen ? 'open' : ''}" id="mg-body-${mg.id}">
+        <div id="ex-list-${mg.id}"></div>
+        <div class="add-ex-row">
+          <input class="add-ex-input" id="add-input-${mg.id}" placeholder="Add exercise..."
+            onkeydown="if(event.key==='Enter') addExercise('${mg.id}')">
+          <button class="add-ex-btn" onclick="addExercise('${mg.id}')">+ Add</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+
+    // Render exercises
+    const exListEl = card.querySelector(`#ex-list-${mg.id}`);
+    exList.forEach((ex, idx) => {
+      const row = document.createElement('div');
+      row.className = 'exercise-row';
+      row.innerHTML = `
+        <div class="ex-top">
+          <input type="checkbox" class="ex-checkbox" ${ex.checked ? 'checked' : ''}
+            onchange="toggleEx('${mg.id}', ${idx}, this.checked)">
+          <div class="ex-name ${ex.checked ? 'done' : ''}" id="exname-${mg.id}-${idx}">${ex.name}</div>
+          <button class="ex-remove" onclick="removeEx('${mg.id}', ${idx})" title="Remove">✕</button>
+        </div>
+        <div class="ex-notes">
+          <input type="text" placeholder="Sets (e.g. 4)" value="${ex.sets || ''}"
+            oninput="updateExField('${mg.id}', ${idx}, 'sets', this.value)" style="max-width:120px">
+          <input type="text" placeholder="Reps (e.g. 8-12)" value="${ex.reps || ''}"
+            oninput="updateExField('${mg.id}', ${idx}, 'reps', this.value)" style="max-width:140px">
+          <input type="text" placeholder="Weight (e.g. 60kg)" value="${ex.weight || ''}"
+            oninput="updateExField('${mg.id}', ${idx}, 'weight', this.value)" style="max-width:140px">
+        </div>
+      `;
+      exListEl.appendChild(row);
+    });
+  });
+
+  updateStats();
+}
+
+// ──────────────────────────────────────────
+// ACTIONS
+// ──────────────────────────────────────────
+function toggleMG(gid) {
+  const dayData = getDayData(currentDate);
+  dayData.expanded[gid] = !dayData.expanded[gid];
+  saveData();
+  // Toggle DOM directly for speed
+  const body = document.getElementById(`mg-body-${gid}`);
+  const chevron = body.previousElementSibling.querySelector('.mg-chevron');
+  body.classList.toggle('open', dayData.expanded[gid]);
+  chevron.classList.toggle('open', dayData.expanded[gid]);
+}
+
+function toggleEx(gid, idx, checked) {
+  const dayData = getDayData(currentDate);
+  dayData.groups[gid][idx].checked = checked;
+  saveData();
+  // Update name style
+  const nameEl = document.getElementById(`exname-${gid}-${idx}`);
+  if (nameEl) nameEl.className = `ex-name ${checked ? 'done' : ''}`;
+  // Update progress
+  let total = 0, done = 0;
+  MUSCLE_GROUPS.forEach(mg => {
+    (dayData.groups[mg.id] || []).forEach(ex => { total++; if (ex.checked) done++; });
+  });
+  document.getElementById('progressFill').style.width = total ? `${Math.round(done/total*100)}%` : '0%';
+  document.getElementById('progressText').textContent = `${done} / ${total} done`;
+  document.getElementById('completedBanner').classList.toggle('show', done > 0 && done === total);
+  // Update count in header
+  const countEl = document.querySelector(`#mg-body-${gid}`)?.previousElementSibling?.querySelector('.mg-count');
+  if (countEl) {
+    const list = dayData.groups[gid] || [];
+    countEl.textContent = `${list.filter(e=>e.checked).length}/${list.length} exercises done`;
+  }
+}
+
+function updateExField(gid, idx, field, value) {
+  const dayData = getDayData(currentDate);
+  dayData.groups[gid][idx][field] = value;
+  saveData();
+}
+
+function checkAll(gid) {
+  const dayData = getDayData(currentDate);
+  const list = dayData.groups[gid] || [];
+  const allDone = list.every(e => e.checked);
+  list.forEach(e => e.checked = !allDone);
+  saveData();
+  render();
+}
+
+function removeEx(gid, idx) {
+  const dayData = getDayData(currentDate);
+  dayData.groups[gid].splice(idx, 1);
+  saveData();
+  render();
+}
+
+function addExercise(gid) {
+  const input = document.getElementById(`add-input-${gid}`);
+  const name = input.value.trim();
+  if (!name) return;
+  const dayData = getDayData(currentDate);
+  dayData.groups[gid].push({ name, checked: false, sets: '', reps: '', weight: '' });
+  // Auto-open
+  dayData.expanded[gid] = true;
+  saveData();
+  render();
+  // Re-focus add input
+  setTimeout(() => {
+    const el = document.getElementById(`add-input-${gid}`);
+    if (el) el.focus();
+  }, 50);
+}
+
+function changeDay(delta) {
+  const d = new Date(currentDate + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  currentDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  render();
+}
+
+function goToday() {
+  currentDate = todayKey();
+  render();
+}
+
+function updateStats() {
+  // Count total workout days (any exercise checked)
+  let totalDays = 0, totalEx = 0, streak = 0;
+  const keys = Object.keys(data).sort();
+  const today = todayKey();
+
+  keys.forEach(k => {
+    let dayDone = false;
+    MUSCLE_GROUPS.forEach(mg => {
+      (data[k]?.groups?.[mg.id] || []).forEach(ex => {
+        if (ex.checked) { totalEx++; dayDone = true; }
+      });
+    });
+    if (dayDone) totalDays++;
+  });
+
+  // Streak: count consecutive days back from today
+  let checkDate = new Date(today + 'T00:00:00');
+  while (true) {
+    const k = `${checkDate.getFullYear()}-${String(checkDate.getMonth()+1).padStart(2,'0')}-${String(checkDate.getDate()).padStart(2,'0')}`;
+    let dayDone = false;
+    MUSCLE_GROUPS.forEach(mg => {
+      (data[k]?.groups?.[mg.id] || []).forEach(ex => { if (ex.checked) dayDone = true; });
+    });
+    if (!dayDone) break;
+    streak++;
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  document.getElementById('streakCount').textContent = streak;
+  document.getElementById('totalDays').textContent = totalDays;
+  document.getElementById('totalExercises').textContent = totalEx;
+}
+
+// ──────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
